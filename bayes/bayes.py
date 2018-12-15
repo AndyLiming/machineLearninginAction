@@ -25,3 +25,25 @@ def setOfWords2Vec(vocabList, inputSet):
     else:
       print("the word is not in the vovabulary!")
   return returnVec
+
+def trainNB0(trainMat, trainCate):
+  numTrainDocs = len(trainMat)
+  numWords = len(trainMat[0])
+  pAbusive = sum(trainCate) / float(numTrainDocs)
+  p0Num = np.zeros(numWords)
+  p1Num = np.zeros(numWords)
+  p0Denom = 0.0
+  p1Denom = 0.0
+  for i in range(numTrainDocs):
+    if trainCate[i] == 1:
+      p1Num += trainMat[i]
+      p1Denom += sum(trainMat[i])
+    else:
+      p0Num += trainMat[i]
+      p0Denom += sum(trainMat[i])
+  p1Vect = p1Num / p1Denom
+  p0Vect = p0Num / p0Denom
+  return p0Vect, p1Vect, pAbusive
+
+if __name__ == '__main__':
+  
