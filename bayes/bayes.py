@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as mpl
+import math
 
 def loadDataSet():
   postingList=[['my', 'dog', 'has', 'flea', 'problems', 'help', 'please'],
@@ -32,8 +33,8 @@ def trainNB0(trainMat, trainCate):
   pAbusive = sum(trainCate) / float(numTrainDocs)
   p0Num = np.zeros(numWords)
   p1Num = np.zeros(numWords)
-  p0Denom = 0.0
-  p1Denom = 0.0
+  p0Denom = 2.0
+  p1Denom = 2.0 #correction
   for i in range(numTrainDocs):
     if trainCate[i] == 1:
       p1Num += trainMat[i]
@@ -45,5 +46,24 @@ def trainNB0(trainMat, trainCate):
   p0Vect = p0Num / p0Denom
   return p0Vect, p1Vect, pAbusive
 
+def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1):
+  p1 = sum(vec2Classify * p1Vec) + math.log(pClass1)
+  p0 = sum(vec2Classify * p0Vec) + math.log(1.0- pClass1)
+  return 1 if p1>p0 else 0
+
+def testingNB():
+  listOPost, listClasses = loadDataSet()
+  myVocabList = createVocabList(listOPost)
+  trainMat = []
+  for postinDoc in listOPost:
+    trainMat.append(setOfWords2Vec(myVocabList, postinDoc))
+  p0V, p1V, pAb = trainNB0(trainMat, listClasses)
+  testEntry = ['love', 'my', 'dalmation']
+  thisDoc = np.array(setOfWords2Vec(myVocabList, testEntry))
+  print(testEntry, "classified as: ", classifyNB(thisDoc, p0V, p1V, pAb))
+  testEntry = ['stupid', 'garbage']
+  thisDoc = np.array(setOfWords2Vec(myVocabList, testEntry))
+  print(testEntry,"classified as: ",classifyNB(thisDoc,p0V, p1V, pAb))
+
 if __name__ == '__main__':
-  
+  testingNB()
