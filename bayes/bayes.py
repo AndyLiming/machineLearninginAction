@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib as mpl
 import math
+import re
 
 def loadDataSet():
   postingList=[['my', 'dog', 'has', 'flea', 'problems', 'help', 'please'],
@@ -64,6 +65,13 @@ def testingNB():
   testEntry = ['stupid', 'garbage']
   thisDoc = np.array(setOfWords2Vec(myVocabList, testEntry))
   print(testEntry,"classified as: ",classifyNB(thisDoc,p0V, p1V, pAb))
+
+def bagOfWords2vecMN(vocabList, inputSet):
+  retVec = [0] * len(vocabList)
+  for word in inputSet:
+    if word in vocabList:
+      retVec[vocabList.index(word)] += 1
+  return retVec
 
 if __name__ == '__main__':
   testingNB()
