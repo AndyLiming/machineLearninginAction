@@ -3,6 +3,8 @@ import matplotlib as mpl
 import math
 import re
 import random
+import operator
+import feedparser
 
 def loadDataSet():
   postingList=[['my', 'dog', 'has', 'flea', 'problems', 'help', 'please'],
@@ -111,5 +113,58 @@ def spamTest():
       errorCnt += 1
   print("the error rate is %f"%(float(errorCnt)/len(testSet)))
 
+def calcMostFreq(vocabList, fullText):
+  freqDict = {}
+  for token in vocabList:
+    freqDict[token] = fullText.count(token)
+  sortedFreq = sorted(freqDict.items(), key=operator.itemgetter(1), reverse=True)
+  return sortedFreq[:30]
+
+def localWords(feed1, feed0):
+  docList = []
+  classList = []
+  fullText = []
+  minLen = min(len(feed1['entries']), len(feed0['entries']))
+  print(len(feed1['entries']), len(feed0['entries']))
+  for i in range(minLen):
+    wordList = textParse(feed1['entries'][i]['summary'])
+    docList.append(wordList)
+    fullText.append(wordList)
+    classList.append(1)
+    wordList = textParse(feed0['entries'][i]['summary'])
+    docList.append(wordList)
+    fullText.append(wordList)
+    classList.append(0)
+  vocabList = createVocabList(docList)
+  '''
+  top30Words = calcMostFreq(vocabList, fullText)
+  for pairW in top30Words:
+    if pairW[0] in vocabList: vocabList.remove(pairW[0])
+  '''
+  trainingSet = list(range(2*minLen))
+  testSet = []
+  for i in range(3):
+    randIndex = int(random.uniform(0, len(trainingSet)))
+    testSet.append(trainingSet[randIndex])
+    del (trainingSet[randIndex])
+  trainMat = []
+  trainClasses = []
+  for docIndex in trainingSet:
+    trainMat.append(bagOfWords2vecMN(vocabList, docList[docIndex]))
+    trainClasses.append(classList[docIndex])
+  p0V, p1V, pSpam = trainNB0(np.array(trainMat), np.array(trainClasses))
+  errorCnt = 0
+  for docIndex in testSet:
+    wordVector = bagOfWords2vecMN(vocabList, docList[docIndex])
+    if classifyNB(np.array(wordVector), p0V, p1V, pSpam) != classList[docIndex]:
+      errorCnt += 1
+  print("the error rate is %f" % (float(errorCnt) / len(testSet)))
+  return vocabList,p0V,p1V
+
 if __name__ == '__main__':
-  spamTest()
+  #spamTest()
+  #ny = feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
+  #sf = feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
+  ny = feedparser.parse('http://www.nasa.gov/rss/dyn/image_of_the_day.rss')
+  sf = feedparser.parse('http://sports.yahoo.com/nba/teams/hou/rss.xml')
+  vocabList, pSF, pNY = localWords(ny, sf)
