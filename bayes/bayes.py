@@ -161,10 +161,29 @@ def localWords(feed1, feed0):
   print("the error rate is %f" % (float(errorCnt) / len(testSet)))
   return vocabList,p0V,p1V
 
+def getTopWords(ny, sf):
+  vocabList, p0V, p1V = localWords(ny, sf)
+  topNy = []
+  topSf = []
+  for i in range(len(p0V)):
+    if p0V[i] > -6.0: topSf.append((vocabList[i], p0V[i]))
+    if p1V[i] > -6.0: topNy.append((vocabList[i], p0V[i]))
+  sortedSf = sorted(topSf, key=lambda pair: pair[1], reverse=True)
+  print("SF:\n")
+  for item in sortedSf:
+    print(item[0])
+  print("------------")
+  sortedNy = sorted(topNy, key=lambda pair: pair[1], reverse=True)
+  print("NY:\n")
+  for item in sortedNy:
+    print(item[0])
+  print("------------")
+
 if __name__ == '__main__':
   #spamTest()
   #ny = feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
-  #sf = feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
+  #sf = feedparser.parse('http://sfbay.craigslist.org/stp/index.rss') #unavailable links don't know why 
   ny = feedparser.parse('http://www.nasa.gov/rss/dyn/image_of_the_day.rss')
   sf = feedparser.parse('http://sports.yahoo.com/nba/teams/hou/rss.xml')
-  vocabList, pSF, pNY = localWords(ny, sf)
+  #vocabList, pSF, pNY = localWords(ny, sf)
+  getTopWords(ny,sf)
