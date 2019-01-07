@@ -110,6 +110,35 @@ def updateEk(oS, k):
   Ek = calcEk(oS, k)
   os.eCache[k]=[1,Ek]
 
+def innerL(i, oS):
+  Ei = calcEk(oS, i)
+  if ((oS.labelMat[i] * Ei < -oS.tol) and (oS.alphas[i] < oS.C)) or ((oS.labelMat[i] * Ei > oS.tol) and (oS.alphas[i] > 0)):
+    j, Ej = selectJ(i, oS, Ei)
+    alphaIold = oS.alphas[i].copy()
+    alphaJold = oS.alphas[j].copy()
+    if (oS.labelMat[i] != oS.labelMat[j]):
+      L = max(0, oS.alphas[j] - oS.alphas[i])
+      H = min(oS.C, oS.C + oS.alphas[j] - oS.alphas[i])
+    else:
+      L = max(0, oS.alphas[j] + oS.alphas[i] - oS.C)
+      H = min(oS.C, oS.alphas[j] + oS.alphas[i])
+    if L == H: print("L == H"); return 0
+    eta = 2.0 * oS.X[i,:] * oS.X[j,:].T - oS.X[i,:] * oS.X[i,:].T - oS.X[j,:] * oS.X[j,:].T
+    if eta >= 0: print("eta >= 0"); return 0
+    oS.alphas[j] -= oS.labelMat[j]*(Ei - Ej)/eta
+    oS.alphas[j] = clipAlpha(oS.alphas[j],H,L)
+    updateEk(oS, j)
+    if (abs(oS.alphas[j] - alphaJold) < 0.00001): print ("j not moving enough"); return 0
+    oS.alphas[i] += oS.labelMat[j]*oS.labelMat[i]*(alphaJold - oS.alphas[j])
+    updateEk(oS, i)
+    b1 = oS.b - Ei- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.K[i,i] - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.K[i,j]
+    b2 = oS.b - Ej- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.K[i,j] - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.K[j,j]
+    if (0 < oS.alphas[i]) and (oS.C > oS.alphas[i]): oS.b = b1
+    elif (0 < oS.alphas[j]) and (oS.C > oS.alphas[j]): oS.b = b2
+    else: oS.b = (b1 + b2)/2.0
+    return 1
+  else: return 0
+
 if __name__ == '__main__':
   dataMat, labelMat = loadDataset('testSet.txt')
   print(labelMat)
