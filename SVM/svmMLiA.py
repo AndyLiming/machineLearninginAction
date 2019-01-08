@@ -218,6 +218,61 @@ def testRbf(k1=1.3):
     if np.sign(predict) != np.sign(labelArr[i]): errorCount += 1
   print("the test error rate is: %f" % (float(errorCount) / m))
 
+# Handwritten digit recognition based on SVM 
+def img2vector(filename): #function from ch02 KNN
+  vec = np.zeros((1, 1024))
+  f = open(filename)
+  for i in range(32):
+    lineStr = f.readline()
+    for j in range(32):
+      vec[0, 32 * i + j] = int(lineStr[j])
+  return vec
+
+def loadImages(dirName):
+  hwLabels = []
+  trainingFileList = os.listdir(dirName)
+  m = len(trainingFileList)
+  trainingMat = np.zeros((m, 1024))
+  for i in range(m):
+    fileNameStr = trainingFileList[i]
+    fileStr = fileNameStr.split('.')[0]
+    classNumStr = int(fileStr.split('_')[0])
+    if classNumStr == 9: hwLabels.append(-1)
+    else: hwLabels.append(1)
+    trainingMat[i,:] = img2vector('%s/%s' % (dirName, fileNameStr))
+  return trainingMat, hwLabels
+
+def testDigits(kTup=('rbf',10)):
+  srcDir = '../KNN/digits/'
+  trainDirName = srcDir + 'trainingDigits'
+  testDirName = srcDir + 'testDigits'
+  dataArr, labelArr = loadImages(trainDirName)
+  b, alphas = smoP(dataArr, labelArr, 200, 0.0001, 100, kTup)
+  dataMat = np.mat(dataArr)
+  labelMat = np.mat(labelArr).transpose()
+  svInd = np.nonzero(alphas.A > 0)[0]
+  sVs = dataMat[svInd]
+  labelSV = labelMat[svInd]
+  print("there are %d Support Vectors" % np.shape(sVs)[0])
+  m, n = np.shape(dataMat)
+  errorCount = 0
+  for i in range(m):
+    kernekEval = kernelTrans(sVs, dataMat[i,:], kTup)
+    predict = kernekEval.T * np.multiply(labelSV, alphas[svInd]) + b
+    if np.sign(predict) != np.sign(labelArr[i]): errorCount += 1
+  print("the training error rate is: %f" % (float(errorCount) / m))
+  # test dataset
+  dataArr, labelArr = loadImages(testDirName)
+  dataMat = np.mat(dataArr)
+  labelMat = np.mat(labelArr).transpose()
+  m, n = np.shape(dataMat)
+  errorCount = 0
+  for i in range(m):
+    kernekEval = kernelTrans(sVs, dataMat[i,:], kTup)
+    predict = kernekEval.T * np.multiply(labelSV, alphas[svInd]) + b
+    if np.sign(predict) != np.sign(labelArr[i]): errorCount += 1
+  print("the test error rate is: %f" % (float(errorCount) / m))
+
 
 if __name__ == '__main__':
   #dataMat, labelMat = loadDataset('testSet.txt')
@@ -226,4 +281,5 @@ if __name__ == '__main__':
   #print(b)
   #print(alphas[alphas>0])
 
-  testRbf()
+  #testRbf()
+  testDigits()
