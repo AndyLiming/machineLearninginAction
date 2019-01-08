@@ -92,14 +92,16 @@ def calcEk(oS, k):
 def selectJ(i, oS, Ei):
   maxK = -1; maxDeltaE = 0; Ej = 0
   oS.eCache[i] = [1,Ei]
-  validEcacheList = nonzero(oS.eCache[:,0].A)[0]
+  validEcacheList = np.nonzero(oS.eCache[:,0].A)[0]
   if (len(validEcacheList)) > 1:
     for k in validEcacheList:
       if k == i: continue
       Ek = calcEk(oS, k)
       deltaE = abs(Ei - Ek)
       if (deltaE > maxDeltaE):
-      axK = k; maxDeltaE = deltaE; Ej = Ek
+        axK = k
+        maxDeltaE = deltaE
+        Ej = Ek
     return maxK, Ej
   else:
     j = selectJrand(i, oS.m)
@@ -108,7 +110,7 @@ def selectJ(i, oS, Ei):
 
 def updateEk(oS, k):
   Ek = calcEk(oS, k)
-  os.eCache[k]=[1,Ek]
+  oS.eCache[k]=[1,Ek]
 
 def innerL(i, oS):
   Ei = calcEk(oS, i)
@@ -131,19 +133,49 @@ def innerL(i, oS):
     if (abs(oS.alphas[j] - alphaJold) < 0.00001): print ("j not moving enough"); return 0
     oS.alphas[i] += oS.labelMat[j]*oS.labelMat[i]*(alphaJold - oS.alphas[j])
     updateEk(oS, i)
-    b1 = oS.b - Ei- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.K[i,i] - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.K[i,j]
-    b2 = oS.b - Ej- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.K[i,j] - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.K[j,j]
+    b1 = oS.b - Ei- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.X[i,:]*oS.X[i,:].T - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.X[i,:]*oS.X[j,:].T
+    b2 = oS.b - Ej- oS.labelMat[i]*(oS.alphas[i]-alphaIold)*oS.X[i,:]*oS.X[j,:].T - oS.labelMat[j]*(oS.alphas[j]-alphaJold)*oS.X[j,:]*oS.X[j,:].T
     if (0 < oS.alphas[i]) and (oS.C > oS.alphas[i]): oS.b = b1
     elif (0 < oS.alphas[j]) and (oS.C > oS.alphas[j]): oS.b = b2
     else: oS.b = (b1 + b2)/2.0
     return 1
   else: return 0
 
+def smoP(dataMatIn, classLabels, C, toler, maxIter, kTup=('lin', 0)):
+  oS = optStruct(np.mat(dataMatIn), np.mat(classLabels).transpose(), C, toler)
+  iter = 0
+  entireSet = True
+  alphaPairsChanged = 0
+  while (iter < maxIter) and ((alphaPairsChanged > 0) or (entireSet)):
+    alphaPairsChanged = 0
+    if entireSet:
+      for i in range(oS.m):
+        alphaPairsChanged += innerL(i, oS)
+        print("full set, iter: %d, i: %d, pairs changed: %d" % (iter, i, alphaPairsChanged))
+      iter += 1
+    else:
+      nonBoundIs = np.nonzero((oS.alphas.A > 0) * (oS.alphas.A < C))[0]
+      for i in nonBoundIs:
+        alphaPairsChanged += innerL(i, oS)
+        print("full set, iter: %d, i: %d, pairs changed: %d" % (iter, i, alphaPairsChanged))
+      iter += 1
+    if entireSet: entireSet = False
+    elif (alphaPairsChanged == 0): entireSet = True
+    print("iteration num: %d" % iter)
+  return oS.b,oS.alphas
+
+def calcWs(alphas, dataArr, classLabels):
+  X = np.mat(dataArr)
+  labelMat = np.mat(classLabels)
+  m,n=np.shape(X)
+  w = np.zeros((n, 1))
+  for i in range(m):
+    w += np.multiply(alphas[i] * labelMat[i], X[i,:].T)
+  return w
+
 if __name__ == '__main__':
   dataMat, labelMat = loadDataset('testSet.txt')
-  print(labelMat)
-  #dataMat = np.array(dataMat)
-  #labelMat = np.array(labelMat)
-  b, alphas = smoSimple(dataMat, labelMat, 0.6, 0.001, 40)
+  #b, alphas = smoSimple(dataMat, labelMat, 0.6, 0.001, 40)
+  b, alphas = smoP(dataMat, labelMat, 0.6, 0.001, 40)
   print(b)
   print(alphas[alphas>0])
