@@ -47,20 +47,30 @@ def lwlrTest(testArr, xArr, yArr, k=1.0):
   m = np.shape(testArr)[0]
   yHat = np.zeros(m)
   for i in range(m):
-    yHat[i] lwlr(testArr[i], xArr, yArr, k)
+    yHat[i] = lwlr(testArr[i], xArr, yArr, k)
   return yHat
 
 if __name__ == '__main__':
   xArr, yArr = loadDataset('ex0.txt')
-  ws = standRegres(xArr, yArr)
-  print(ws)
+  # ws = standRegres(xArr, yArr)
+  # print(ws)
+  # xMat = np.mat(xArr)
+  # yMat = np.mat(yArr)
+  # fig = plt.figure()
+  # ax = fig.add_subplot(111)
+  # ax.scatter(xMat[:, 1].flatten().A[0], yMat.T[:, 0].flatten().A[0])
+  # xCopy = xMat.copy()
+  # xCopy.sort(0)
+  # yHat = xCopy * ws
+  # ax.plot(xCopy[:, 1], yHat)
+  # plt.show()
+  yHat = lwlrTest(xArr, xArr, yArr, 0.03)
   xMat = np.mat(xArr)
   yMat = np.mat(yArr)
+  srtInd = xMat[:, 1].argsort(0)
+  xSort = xMat[srtInd][:, 0,:]
   fig = plt.figure()
   ax = fig.add_subplot(111)
-  ax.scatter(xMat[:, 1].flatten().A[0], yMat.T[:, 0].flatten().A[0])
-  xCopy = xMat.copy()
-  xCopy.sort(0)
-  yHat = xCopy * ws
-  ax.plot(xCopy[:, 1], yHat)
+  ax.scatter(xMat[:, 1].flatten().A[0], yMat.T[:, 0].flatten().A[0],s=2,c='red')
+  ax.plot(xSort[:, 1], yHat[srtInd])
   plt.show()
