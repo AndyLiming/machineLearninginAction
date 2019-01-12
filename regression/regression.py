@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import json
 from time import sleep
-import urllib3
+import urllib
 
 def loadDataset(fileName):
   numFeat = len(open(fileName).readline().split('\t'))
@@ -114,11 +114,11 @@ def stageWise(xArr, yArr, eps=1.0, numIt=100):
 def rssError(yArr, yHatArr):
   return ((yArr-yHatArr)**2).sum() #SSD
 
-def searchForset(retX, retY, setNum, yr, numPce, origPrc):
+def searchForSet(retX, retY, setNum, yr, numPce, origPrc):
   sleep(10)
   myApiStr = 'AIzaSyD2cR2KFyx12hXu6PFU-wrWot3NXvko8vY'
-  searchURL = 'https://www.googleapis.com/shopping/search/v1/public/products?key=%s&country=US&q=lego+%d&alt=json' % (myAPIstr, setNum)
-  pg = urllib3.urlopen(searchURL)
+  searchURL = 'https://www.googleapis.com/shopping/search/v1/public/products?key=%s&country=US&q=lego+%d&alt=json' % (myApiStr, setNum)
+  pg = urllib.request.urlopen(searchURL)
   retDict = json.loads(pg.read())
   for i in range(len(retDict['items'])):
     try:
@@ -130,10 +130,10 @@ def searchForset(retX, retY, setNum, yr, numPce, origPrc):
       for item in listOfInv:
         sellingPrice = item['price']
         if  sellingPrice > origPrc * 0.5:
-          print "%d\t%d\t%d\t%f\t%f" % (yr,numPce,newFlag,origPrc, sellingPrice)
+          print("%d\t%d\t%d\t%f\t%f" % (yr,numPce,newFlag,origPrc, sellingPrice))
           retX.append([yr, numPce, newFlag, origPrc])
           retY.append(sellingPrice)
-    except: print 'problem with item %d' % i
+    except: print("problem with item %d" % i)
 
 def setDataCollect(retX, retY):
     searchForSet(retX, retY, 8288, 2006, 800, 49.99)
@@ -160,23 +160,23 @@ def crossValidation(xArr, yArr, numVal=10):
       else:
         testX.append(xArr[indexList[j]])
         testY.append(yArr[indexList[j]])
-      wMat = ridgeTest(trainX,trainY)    #get 30 weight vectors from ridge
-      for k in range(30):#loop over all of the ridge estimates
-          matTestX = mat(testX); matTrainX=mat(trainX)
-          meanTrain = mean(matTrainX,0)
-          varTrain = var(matTrainX,0)
-          matTestX = (matTestX-meanTrain)/varTrain #regularize test with training params
-          yEst = matTestX * mat(wMat[k,:]).T + mean(trainY)#test ridge results and store
-          errorMat[i,k]=rssError(yEst.T.A,array(testY))
-          #print errorMat[i,k]
+    wMat = ridgeTest(trainX,trainY)    #get 30 weight vectors from ridge
+    for k in range(30):#loop over all of the ridge estimates
+      matTestX = mat(testX); matTrainX=mat(trainX)
+      meanTrain = mean(matTrainX,0)
+      varTrain = var(matTrainX,0)
+      matTestX = (matTestX-meanTrain)/varTrain #regularize test with training params
+      yEst = matTestX * mat(wMat[k,:]).T + mean(trainY)#test ridge results and store
+      errorMat[i,k]=rssError(yEst.T.A,array(testY))
+      #print errorMat[i,k]
   meanErrors = mean(errorMat,0)#calc avg performance of the different ridge weight vectors
   minMean = float(min(meanErrors))
   bestWeights = wMat[nonzero(meanErrors==minMean)]
   xMat = mat(xArr); yMat=mat(yArr).T
   meanX = mean(xMat,0); varX = var(xMat,0)
   unReg = bestWeights/varX
-  print "the best model from Ridge Regression is:\n",unReg
-  print "with constant term: ",-1*sum(multiply(meanX,unReg)) + mean(yMat)
+  print ("the best model from Ridge Regression is:\n",unReg)
+  print ("with constant term: ",-1*sum(multiply(meanX,unReg)) + mean(yMat))
 
 if __name__ == '__main__':
   # xArr, yArr = loadDataset('ex0.txt')
@@ -222,9 +222,19 @@ if __name__ == '__main__':
   weightsLs = standRegres(xMat, yMat.T).T
   #-------------------#
 
-  weightsSw = stageWise(xArr, yArr, 0.01, 200)
+  # weightsSw = stageWise(xArr, yArr, 0.01, 200)
   
-  print("LS: ", weightsLs)
-  print("stageWise: ", weightsSw[-1])
-  ax.plot(weightsSw)
-  plt.show()
+  # print("LS: ", weightsLs)
+  # print("stageWise: ", weightsSw[-1])
+  # ax.plot(weightsSw)
+  # plt.show()
+
+  lgX = []
+  lgY = []
+  setDataCollect(lgX, lgY)
+  print(np.shape(lgX))
+  lgX1 = np.mat(np.ones((58, 5)))
+  lgX1[:, 1, 5] = np.mat(lgX)
+  ws = standRegres(lgX1, lgY)
+  print(ws)
+  crossValidation(lgX,lgY,10)
